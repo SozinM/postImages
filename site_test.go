@@ -75,7 +75,7 @@ func TestDownloadMetaPicture(t *testing.T) {
 
 func TestPostAddMetaPicture(t *testing.T) {
 	for _, testCase := range postAddQueryes {
-		req, err := http.NewRequest("PUT", "/entry", bytes.NewBuffer(testCase.Data))
+		req, err := http.NewRequest("POST", "/images", bytes.NewBuffer(testCase.Data))
 		if err != nil {
 			t.Fatal(err)
 		}
