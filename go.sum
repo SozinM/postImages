@@ -1,0 +1,6 @@
+github.com/disintegration/imaging v1.6.1-0.20190602120407-465faf0892b5 h1:49XCcpR1Z0N9UCRdgAz9yAT6x+sipaus74R6yMegRuU=
+github.com/disintegration/imaging v1.6.1-0.20190602120407-465faf0892b5/go.mod h1:xuIt+sRxDFrHS0drzXUlCJthkJ8k7lkkUojDSR247MQ=
+github.com/gorilla/mux v1.7.4-0.20190720201435-e67b3c02c719 h1:zQ+2G/ywb753CxKkvvZ0O6uu/fk5HRm21wdcVEq1U6E=
+github.com/gorilla/mux v1.7.4-0.20190720201435-e67b3c02c719/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
+golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81 h1:00VmoueYNlNz/aHIilyyQz/MHSqGoWJzpFv/HW8xpzI=
+golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81/go.mod h1:ux5Hcp/YLpHSI86hEcLt0YII63i6oz57MZXIpbrjZUs=
