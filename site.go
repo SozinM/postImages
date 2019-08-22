@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/disintegration/imaging"
 	"github.com/gorilla/mux"
@@ -9,7 +10,11 @@ import (
 	_ "image/png"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
+	"time"
 )
 
 type StatePicture struct {
@@ -27,6 +32,7 @@ type Picture struct {
 
 var mutex sync.Mutex
 var Pictures []Picture
+
 
 func postAddMetaPicture(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -74,5 +80,33 @@ func downloadMetaPicture(url string) (image.Image, error) {
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/images", postAddMetaPicture).Methods("POST")
-	log.Fatal(http.ListenAndServe(":8000", r))
+
+	srv := &http.Server{
+		Handler:      r,
+		Addr:         ":8080",
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	go func() {
+		log.Fatal(srv.ListenAndServe())
+	}()
+
+	gravefulShutdown(srv)
+}
+
+func gravefulShutdown(srv *http.Server) {
+	interruptChan := make(chan os.Signal, 1)
+	signal.Notify(interruptChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	// Block until we receive our signal.
+	<-interruptChan
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	srv.Shutdown(ctx)
+
+	log.Println("Shutting down")
+	os.Exit(0)
 }
