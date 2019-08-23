@@ -27,14 +27,14 @@ Service answer contains urls and success status, for example:
     }
 ]
 
-#How to build:
+# How to build:
 cd ~
 git clone https://github.com/SozinM/postImages
 cd postImages
 go test -v -race
 go build
 
-#Run inside container
+# Run inside container
 cd ~
 git clone https://github.com/SozinM/postImages
 cd postImages
