@@ -4,6 +4,7 @@
 Post image is rest service for (only) uploading images and creating thumbnails.
 Entry point for service is "/images"
 Json format for request is {"url":[list of urls]}, for example:
+
     {
         "url": [
             "https://blog.golang.org/go-image-package_image-package-01.png",
@@ -12,6 +13,7 @@ Json format for request is {"url":[list of urls]}, for example:
         ]
     }
 Service answer contains urls and success status, for example:
+
     [
         {
             "url": "https://blog.golang.org/go-image-package_image-package-01.png",
