@@ -28,14 +28,14 @@ Service answer contains urls and success status, for example:
 ]
 
 # How to build:
-cd ~
-git clone https://github.com/SozinM/postImages
-cd postImages
-go test -v -race
-go build
+    cd ~
+    git clone https://github.com/SozinM/postImages
+    cd postImages
+    go test -v -race
+    go build
 
 # Run inside container
-cd ~
-git clone https://github.com/SozinM/postImages
-cd postImages
-docker-compose up
+    cd ~
+    git clone https://github.com/SozinM/postImages
+    cd postImages
+    docker-compose up
