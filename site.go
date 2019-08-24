@@ -42,7 +42,10 @@ func postAddMetaPicture(w http.ResponseWriter, r *http.Request) {
 	mutex.Lock()
 	Pictures = append(Pictures, pictures...)
 	mutex.Unlock()
-	json.NewEncoder(w).Encode(states)
+	err := json.NewEncoder(w).Encode(states)
+	if err != nil {
+		_ = json.NewEncoder(w).Encode(http.StatusBadRequest)
+	}
 }
 
 func processMetaPicture(metaPicture MetaPicture) ([]Picture, []StatePicture) {
@@ -92,10 +95,10 @@ func main() {
 		log.Fatal(srv.ListenAndServe())
 	}()
 
-	gravefulShutdown(srv)
+	gracefulShutdown(srv)
 }
 
-func gravefulShutdown(srv *http.Server) {
+func gracefulShutdown(srv *http.Server) {
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
@@ -105,7 +108,10 @@ func gravefulShutdown(srv *http.Server) {
 	// Create a deadline to wait for.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	srv.Shutdown(ctx)
+	err := srv.Shutdown(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Println("Shutting down")
 	os.Exit(0)
