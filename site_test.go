@@ -2,61 +2,24 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 )
 
-type TestPostAdd struct {
-	Data     []byte
-	Expected []byte
-}
 type TestUrls struct {
 	url string
 	err bool
 }
 
-var postAddQueryes = []TestPostAdd{
-	{
-		[]byte(`{"url":[""]}`),
-		[]byte(`{"url":[""]}`),
-	},
-	{
-		[]byte(`{
-	"url": [
-			"https://blog.golang.org/go-image-package_image-package-01.png"]
-	}`),
-		[]byte(`[
-	{
-		"url":"https://blog.golang.org/go-image-package_image-package-01.png",
-		"success": true
-	}]`),
-	},
-	{
-		[]byte(`{
-    "url": [
-        "https://blog.golang.org/go-image-package_image-package-01.png",
-        "1",
-        "https://miro.medium.com/max/870/1*b3XJkfO_e6b251CWnZ8g7A.png"
-    ]
-}`),
-		[]byte(`[
-    {
-        "url": "https://blog.golang.org/go-image-package_image-package-01.png",
-        "success": true
-    },
-    {
-        "url": "1",
-        "success": false
-    },
-    {
-        "url": "https://miro.medium.com/max/870/1*b3XJkfO_e6b251CWnZ8g7A.png",
-        "success": true
-    }
-]`),
-	},
-}
+var case1 = `{"url":[""]}`
+var ans1 = `[{"url":"","success":false}]`
+var case2 = `{"url":["https://blog.golang.org/go-image-package_image-package-01.png"]}`
+var ans2 = `[{"url":"https://blog.golang.org/go-image-package_image-package-01.png","success":true}]`
+var case3 = `{"url":["https://blog.golang.org/go-image-package_image-package-01.png","1","https://miro.medium.com/max/870/1*b3XJkfO_e6b251CWnZ8g7A.png"]}`
+var ans3 = `[{"url":"https://blog.golang.org/go-image-package_image-package-01.png","success":true},{"url":"1","success":false},{"url":"https://miro.medium.com/max/870/1*b3XJkfO_e6b251CWnZ8g7A.png","success":true}]`
 var urls = []TestUrls{
 	{"123", true},
 	{"https://blog.golang.org/go-image-package_image-package-01.png", false},
@@ -74,8 +37,12 @@ func TestDownloadMetaPicture(t *testing.T) {
 }
 
 func TestPostAddMetaPicture(t *testing.T) {
-	for _, testCase := range postAddQueryes {
-		req, err := http.NewRequest("POST", "/images", bytes.NewBuffer(testCase.Data))
+	test1 := []string{case1,ans1}
+	test2 := []string{case2,ans2}
+	test3 := []string{case3,ans3}
+	tests := [][]string{test1,test2,test3}
+	for _, testCase := range tests {
+		req, err := http.NewRequest("POST", "/images", bytes.NewBuffer([]byte(testCase[0])))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -84,16 +51,46 @@ func TestPostAddMetaPicture(t *testing.T) {
 		handler := http.HandlerFunc(postAddMetaPicture)
 		handler.ServeHTTP(rr, req)
 		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("handler returned wrong status code: got %v want %v",
+			t.Errorf("handler returned unexpected body: got\n%v\nwant\n%v\n",
 				status, http.StatusOK)
 		}
-		var data string
-		var expected string
-		json.NewDecoder(rr.Body).Decode(&data)
-		json.NewDecoder(bytes.NewBuffer(testCase.Expected)).Decode(&expected)
-		if data != expected {
-			t.Errorf("handler returned unexpected body: got %v want %v",
-				data, expected)
+		if strings.TrimSuffix(rr.Body.String() , "\n") != testCase[1] {
+			t.Errorf("handler returned unexpected body: got\n%v\nwant\n%v\n",
+				strings.TrimSuffix(rr.Body.String() , "\n") , testCase[1])
 		}
 	}
+}
+// Test with multiply simultaneously goroutines for race conditions
+func TestPostAddMetaPictureRaceCondition(t *testing.T) {
+	test1 := []string{case1,ans1}
+	test2 := []string{case2,ans2}
+	test3 := []string{case3,ans3}
+	tests := [][]string{test1,test2,test3}
+	var wg sync.WaitGroup
+	start := make(chan 	struct {})
+	wg.Add(len(tests))
+	for _, testCase := range tests {
+		go func(testCase []string) {
+			defer wg.Done()
+			req, err := http.NewRequest("POST", "/images", bytes.NewBuffer([]byte(testCase[0])))
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(postAddMetaPicture)
+			<-start
+			handler.ServeHTTP(rr, req)
+			if status := rr.Code; status != http.StatusOK {
+				t.Errorf("handler returned unexpected body: got\n%v\nwant\n%v\n",
+					status, http.StatusOK)
+			}
+			if strings.TrimSuffix(rr.Body.String() , "\n")  != testCase[1] {
+				t.Errorf("handler returned unexpected body: got\n%v\nwant\n%v\n",
+					strings.TrimSuffix(rr.Body.String() , "\n") , testCase[1])
+			}
+		}(testCase)
+	}
+	close(start)
+	wg.Wait()
 }
